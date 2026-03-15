@@ -1,0 +1,9 @@
+{
+  "name": "SIRM",
+  "version": "1.0.0",
+  "description": "Secure Intelligent Release Management \u2014 Multi-Agent Factory Orchestration",
+  "author": "Brush Cyber, LLC",
+  "synced_at": "2026-03-15T14:53:48.988458+00:00",
+  "synced_from": "Orion Unified Management Plane",
+  "upstream_repo": "Brush-Cyber/orion"
+}
