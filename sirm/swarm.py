@@ -259,11 +259,13 @@ class SwarmController:
 
                 cur.execute(
                     "UPDATE swarm_dispatch SET assigned_worker_id = %s, status = 'claimed', claimed_at = NOW() "
-                    "WHERE id = %s AND status = 'queued'",
-                    (best_worker, d["id"])
+                    "WHERE id = %s AND status = 'queued' "
+                    "AND id = (SELECT id FROM swarm_dispatch WHERE id = %s AND status = 'queued' FOR UPDATE SKIP LOCKED)",
+                    (best_worker, d["id"], d["id"])
                 )
-                worker_loads[best_worker]["load"] += 1
-                dispatched += 1
+                if cur.rowcount > 0:
+                    worker_loads[best_worker]["load"] += 1
+                    dispatched += 1
 
             conn.commit()
             return {"dispatched": dispatched, "queued_remaining": len(queued) - dispatched}
@@ -308,9 +310,13 @@ class SwarmController:
             d = cur.fetchone()
             if not d:
                 return {"error": "dispatch not found"}
+            if d.get("assigned_worker_id") and d["assigned_worker_id"] != worker_id:
+                return {"error": "only the assigned worker can escalate"}
 
             current_role = d.get("assigned_role", "line_worker")
             caps = ROLE_CAPABILITIES.get(current_role, {})
+            if not caps.get("can_escalate"):
+                return {"error": f"role {current_role} cannot escalate"}
             next_role = caps.get("escalates_to")
             if not next_role:
                 return {"error": f"no escalation target from {current_role}"}
